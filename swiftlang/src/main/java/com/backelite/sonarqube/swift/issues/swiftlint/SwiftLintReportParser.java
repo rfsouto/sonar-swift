@@ -17,6 +17,8 @@
  */
 package com.backelite.sonarqube.swift.issues.swiftlint;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.FilePredicate;
@@ -25,7 +27,6 @@ import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
 import org.sonar.api.rule.RuleKey;
 
 import java.io.*;
@@ -46,10 +47,45 @@ public class SwiftLintReportParser {
     }
 
     public void parseReport(File reportFile) {
-        try (Stream<String> lines = Files.lines(reportFile.toPath())) {
-            // Read and parse report
-            lines.forEach(this::recordIssue);
-        } catch (IOException e) {
+        try {
+            String content = new String(Files.readAllBytes(reportFile.toPath()));
+            JSONArray issues = new JSONArray(content);
+            for (int i = 0; i < issues.length(); i++) {
+                JSONObject issue = issues.getJSONObject(i);
+                String filePath = issue.getString("file");
+                int lineNum = issue.getInt("line");
+                String message = issue.getString("reason");
+                String ruleId = issue.getString("rule_id");
+
+                FilePredicates predicates = context.fileSystem().predicates();
+                FilePredicate fp = predicates.or(predicates.hasAbsolutePath(filePath), predicates.hasRelativePath(filePath));
+
+                InputFile inputFile = null;
+                if (!context.fileSystem().hasFiles(fp)) {
+                    FileSystem fs = context.fileSystem();
+                    for (InputFile f : fs.inputFiles(fs.predicates().hasType(InputFile.Type.MAIN))) {
+                        if (filePath.endsWith(f.relativePath())) {
+                            inputFile = f;
+                            break;
+                        }
+                    }
+                } else {
+                    inputFile = context.fileSystem().inputFile(fp);
+                }
+                if (inputFile == null) {
+                    LOGGER.warn("file not included in sonar {}", filePath);
+                    continue;
+                }
+                NewIssueLocation dil = context.newIssue().newLocation()
+                        .on(inputFile)
+                        .at(inputFile.selectLine(lineNum))
+                        .message(message);
+                context.newIssue()
+                        .forRule(RuleKey.of(SwiftLintRulesDefinition.REPOSITORY_KEY, ruleId))
+                        .at(dil)
+                        .save();
+            }
+        } catch (Exception e) {
             LOGGER.error("Failed to parse SwiftLint report file", e);
         }
     }
@@ -84,7 +120,7 @@ public class SwiftLintReportParser {
                 LOGGER.warn("file not included in sonar {}", filePath);
                 continue;
             }
-            NewIssueLocation dil = new DefaultIssueLocation()
+            NewIssueLocation dil = context.newIssue().newLocation()
                     .on(inputFile)
                     .at(inputFile.selectLine(lineNum))
                     .message(message);

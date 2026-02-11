@@ -11,7 +11,6 @@ import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
 import org.sonar.api.rule.RuleKey;
 
 import java.io.File;
@@ -108,7 +107,7 @@ public class InferReportParser {
             String info = (String) jsonObject.get("qualifier");
             String rule = jsonObject.get("bug_type").toString();
             try {
-                NewIssueLocation dil = new DefaultIssueLocation()
+                NewIssueLocation dil = context.newIssue().newLocation()
                         .on(inputFile)
                         .at(inputFile.selectLine(lineNum))
                         .message(info);
@@ -132,14 +131,10 @@ public class InferReportParser {
             JSONObject bugTraceObject = (JSONObject) bugTraceJsonArray.get(i);
             String filePath = (String) bugTraceObject.get("filename");
             if (filePath != null) {
-//                if (!filePath.equals(parentFilePath)) {
-//                    continue;
-//                }
                 FilePredicate fp = context.fileSystem().predicates().hasRelativePath(filePath);
                 InputFile inputFile = null;
                 if (!context.fileSystem().hasFiles(fp)) {
                     FileSystem fs = context.fileSystem();
-                    //Search for path _ending_ with the filename
                     for (InputFile f : fs.inputFiles(fs.predicates().hasType(InputFile.Type.MAIN))) {
                         if (filePath.endsWith(f.relativePath())) {
                             inputFile = f;
@@ -163,7 +158,7 @@ public class InferReportParser {
                 }
                 assert inputFile != null;
                 try {
-                    NewIssueLocation newIssueLocation = new DefaultIssueLocation()
+                    NewIssueLocation newIssueLocation = context.newIssue().newLocation()
                             .on(inputFile)
                             .at(inputFile.selectLine(lineNum))
                             .message(description);
@@ -173,7 +168,6 @@ public class InferReportParser {
                 }
             }
         }
-
         return locations;
     }
 

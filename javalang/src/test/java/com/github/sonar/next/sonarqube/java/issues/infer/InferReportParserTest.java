@@ -3,9 +3,8 @@ package com.github.sonar.next.sonarqube.java.issues.infer;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.json.simple.parser.ParseException;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -32,8 +31,8 @@ import static org.mockito.Mockito.*;
 
 class InferReportParserTest {
 
-    @Rule
-    public TemporaryFolder temp = new TemporaryFolder();
+    @TempDir
+    Path tempDir;
 
     private DefaultFileSystem fs;
     private Path moduleBasePath;
@@ -45,10 +44,9 @@ class InferReportParserTest {
     FileSystem fileSystem;
     private InferReportParser self;
 
-
     @org.junit.jupiter.api.BeforeEach
     void setUp() throws IOException {
-        moduleBasePath = temp.newFolder().toPath();
+        moduleBasePath = tempDir;
         fs = new DefaultFileSystem(moduleBasePath);
 
         MockitoAnnotations.openMocks(this);
@@ -59,14 +57,13 @@ class InferReportParserTest {
     void tearDown() {
     }
 
-
     @Test
     void parseReport() throws IOException, ParseException {
         ClassLoader classLoader = getClass().getClassLoader();
         File reportFile = new File(Objects.requireNonNull(classLoader.getResource("report_java.json")).getFile());
         File file = new File(Objects.requireNonNull(classLoader.getResource("Hello.java")).getFile());
 
-        FilePredicates predicates = new DefaultFilePredicates(temp.newFolder().toPath());
+        FilePredicates predicates = new DefaultFilePredicates(tempDir);
         InputFile javaFile = new TestInputFileBuilder("foo", "Hello.java")
             .setModuleBaseDir(moduleBasePath)
             .setLanguage("java")
@@ -76,11 +73,17 @@ class InferReportParserTest {
 
         fs.add(javaFile);
 
-
         when(sensorContext.fileSystem()).thenReturn(fs);
         when(fileSystem.predicates()).thenReturn(predicates);
 
         DefaultIssue defaultIssue = mock(DefaultIssue.class);
+        NewIssueLocation newIssueLocation = mock(NewIssueLocation.class);
+        // Mock chain methods for NewIssueLocation
+        when(defaultIssue.newLocation()).thenReturn(newIssueLocation);
+        when(newIssueLocation.on(any(InputFile.class))).thenReturn(newIssueLocation);
+        when(newIssueLocation.at(any())).thenReturn(newIssueLocation);
+        when(newIssueLocation.message(anyString())).thenReturn(newIssueLocation);
+
         when(defaultIssue.addFlow(anyIterable())).thenReturn(defaultIssue);
         when(defaultIssue.forRule(any(RuleKey.class))).thenReturn(defaultIssue);
         when(defaultIssue.at(any(NewIssueLocation.class))).thenReturn(defaultIssue);
@@ -93,7 +96,6 @@ class InferReportParserTest {
         verify(defaultIssue, times(1)).forRule(any(RuleKey.class));
         verify(defaultIssue, times(1)).at(any(NewIssueLocation.class));
         verify(defaultIssue, times(1)).save();
-
 
     }
 }

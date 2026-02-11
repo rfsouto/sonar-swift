@@ -27,7 +27,6 @@ import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
 import org.sonar.api.rule.RuleKey;
 
 import java.io.File;
@@ -94,7 +93,7 @@ public class FauxPasReportParser {
             }
 
             InputFile inputFile = context.fileSystem().inputFile(fp);
-            NewIssueLocation dil = new DefaultIssueLocation()
+            NewIssueLocation dil = context.newIssue().newLocation()
                     .on(inputFile)
                     .at(inputFile.selectLine(lineNum))
                     .message(info);

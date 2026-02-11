@@ -5,7 +5,7 @@
     <parent>
         <artifactId>sonar-swift</artifactId>
         <groupId>com.github.sonar-next</groupId>
-        <version>1.8.0</version>
+        <version>1.9.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,7 +23,7 @@
         <dependency>
             <groupId>com.github.sonar-next</groupId>
             <artifactId>commons</artifactId>
-            <version>1.8.0</version>
+            <version>1.9.0</version>
         </dependency>
 
         <dependency>
@@ -69,6 +69,7 @@
         <dependency>
             <groupId>org.sonarsource.sonarqube</groupId>
             <artifactId>sonar-testing-harness</artifactId>
+            <version>9.9.0.65466</version>
         </dependency>
         <dependency>
             <groupId>org.sonarsource.sslr</groupId>
@@ -84,8 +85,9 @@
             <artifactId>sonar-orchestrator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.sonarsource.sonarqube</groupId>
+            <groupId>org.sonarsource.api.plugin</groupId>
             <artifactId>sonar-plugin-api</artifactId>
+            <version>9.9.0.229</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

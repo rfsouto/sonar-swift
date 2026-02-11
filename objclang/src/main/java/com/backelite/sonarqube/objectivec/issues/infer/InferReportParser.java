@@ -11,7 +11,6 @@ import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
 import org.sonar.api.rule.RuleKey;
 
 import java.io.File;
@@ -103,7 +102,7 @@ public class InferReportParser {
             String info = (String) jsonObject.get("qualifier");
             assert inputFile != null;
             try {
-                NewIssueLocation dil = new DefaultIssueLocation()
+                NewIssueLocation dil = context.newIssue().newLocation()
                         .on(inputFile)
                         .at(inputFile.selectLine(lineNum))
                         .message(info);
@@ -156,7 +155,7 @@ public class InferReportParser {
                 }
                 assert inputFile != null;
                 try {
-                    NewIssueLocation newIssueLocation = new DefaultIssueLocation()
+                    NewIssueLocation newIssueLocation = context.newIssue().newLocation()
                             .on(inputFile)
                             .at(inputFile.selectLine(lineNum))
                             .message(description);
