@@ -42,13 +42,8 @@ import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfile;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfileImporter;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintRulesDefinition;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintSensor;
-import com.backelite.sonarqube.swift.issues.tailor.TailorProfile;
-import com.backelite.sonarqube.swift.issues.tailor.TailorProfileImporter;
-import com.backelite.sonarqube.swift.issues.tailor.TailorRulesDefinition;
-import com.backelite.sonarqube.swift.issues.tailor.TailorSensor;
 import com.backelite.sonarqube.swift.lang.core.Swift;
 import com.backelite.sonarqube.swift.surefire.SwiftTestFileFinder;
-import com.github.sonar.next.sonarqube.java.issues.infer.JavaInferSensor;
 import org.sonar.api.Plugin;
 import org.sonar.api.config.PropertyDefinition;
 
@@ -72,12 +67,6 @@ public class SwiftPlugin implements Plugin {
                 PropertyDefinition.builder(SwiftLintSensor.REPORT_PATH_KEY)
                     .defaultValue(SwiftLintSensor.DEFAULT_REPORT_PATH)
                     .name("Path to SwiftLint report")
-                    .description("Relative to projects' root.")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder(TailorSensor.REPORT_PATH_KEY)
-                    .defaultValue(TailorSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to Tailor report")
                     .description("Relative to projects' root.")
                     .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
                     .build(),
@@ -105,10 +94,21 @@ public class SwiftPlugin implements Plugin {
                     .description("Relative to projects' root.")
                     .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
                     .build(),
-                PropertyDefinition.builder(JavaInferSensor.REPORT_PATH_KEY)
-                    .defaultValue(JavaInferSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to Infer json formatted report (Java)")
-                    .description("Relative to projects' root.")
+
+                PropertyDefinition.builder("sonar.swift.complexityThreshold")
+                    .defaultValue("10")
+                    .name("Cyclomatic Complexity Threshold")
+                    .description("Maximum allowed cyclomatic complexity for Swift functions.")
+                    .category("Swift")
+                    .subCategory("Complexity")
+                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                    .build(),
+                PropertyDefinition.builder("sonar.swift.cognitiveComplexityThreshold")
+                    .defaultValue("15")
+                    .name("Cognitive Complexity Threshold")
+                    .description("Maximum allowed cognitive complexity for Swift functions.")
+                    .category("Swift")
+                    .subCategory("Complexity")
                     .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
                     .build(),
 
@@ -126,14 +126,6 @@ public class SwiftPlugin implements Plugin {
                 SwiftLintProfile.class,
                 SwiftLintProfileImporter.class,
 
-                // Tailor rules
-                TailorSensor.class,
-                TailorRulesDefinition.class,
-
-                // Tailor quality profile
-                TailorProfile.class,
-                TailorProfileImporter.class,
-
                 // OCLint rules
                 OCLintSensor.class,
                 OCLintRulesDefinition.class,
@@ -149,14 +141,6 @@ public class SwiftPlugin implements Plugin {
                 // Infer OC quality profile
                 InferProfile.class,
                 InferProfileImporter.class,
-
-                // Infer Java rules
-                JavaInferSensor.class,
-                com.github.sonar.next.sonarqube.java.issues.infer.InferRulesDefinition.class,
-
-                // Infer Java quality profile
-                com.github.sonar.next.sonarqube.java.issues.infer.InferProfile.class,
-                com.github.sonar.next.sonarqube.java.issues.infer.InferProfileImporter.class,
 
                 // antlr
 //                AntlrSensor.class,

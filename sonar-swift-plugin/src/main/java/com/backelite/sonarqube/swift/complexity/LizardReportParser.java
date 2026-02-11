@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
-import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.measures.CoreMetrics;
 import org.w3c.dom.Document;
@@ -37,6 +37,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class LizardReportParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(LizardReportParser.class);
@@ -56,6 +58,11 @@ public class LizardReportParser {
     private int lineCountIndex;
     private int cyclomaticComplexityIndex;
     private int functionCountIndex;
+    private final Set<String> complexityFunctionSaved = new HashSet<>();
+    private final Set<String> complexityFileSaved = new HashSet<>();
+    private final Set<String> fileMetricSaved = new HashSet<>();
+    private int complexityThreshold = 10; // Complejidad ciclomática por defecto
+    private int cognitiveComplexityThreshold = 15; // Complejidad cognitiva por defecto
 
     public LizardReportParser(final SensorContext context) {
         this.context = context;
@@ -63,6 +70,23 @@ public class LizardReportParser {
     }
 
     public void parseReport(final File xmlFile) {
+        // Leer umbrales desde la configuración si están definidos
+        String thresholdStr = context.settings().getString("sonar.swift.complexityThreshold");
+        if (thresholdStr != null) {
+            try {
+                complexityThreshold = Integer.parseInt(thresholdStr);
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Umbral de complejidad ciclomática inválido, usando valor por defecto: {}", complexityThreshold);
+            }
+        }
+        String cognitiveStr = context.settings().getString("sonar.swift.cognitiveComplexityThreshold");
+        if (cognitiveStr != null) {
+            try {
+                cognitiveComplexityThreshold = Integer.parseInt(cognitiveStr);
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Umbral de complejidad cognitiva inválido, usando valor por defecto: {}", cognitiveComplexityThreshold);
+            }
+        }
         try {
             DocumentBuilder builder = dbfactory.newDocumentBuilder();
             Document document = builder.parse(xmlFile);
@@ -107,25 +131,45 @@ public class LizardReportParser {
         }
     }
 
+    private void addComplexityFileMeasures(InputFile component, NodeList values) {
+        LOGGER.info("Procesando métricas de archivo para {}", component.key());
+        saveFileMetricOnce(component, CoreMetrics.COMPLEXITY, values.item(cyclomaticComplexityIndex).getTextContent());
+        saveFileMetricOnce(component, CoreMetrics.FUNCTIONS, values.item(functionCountIndex).getTextContent());
+        saveFileMetricOnce(component, CoreMetrics.LINES, values.item(lineCountIndex).getTextContent());
+    }
+
+    private void saveFileMetricOnce(InputFile component, org.sonar.api.measures.Metric metric, String value) {
+        String key = component.key() + ":" + metric.key() + ":file";
+        if (fileMetricSaved.contains(key)) {
+            LOGGER.warn("Evita duplicado: {} para archivo {}", metric.key(), component.key());
+            return; // Ya guardado, no repetir
+        }
+        LOGGER.info("Guardando métrica {} para archivo {} con valor {}", metric.key(), component.key(), value);
+        fileMetricSaved.add(key);
+        context.<Integer>newMeasure()
+            .on(component)
+            .forMetric(metric)
+            .withValue(Integer.parseInt(value))
+            .save();
+    }
+
     private void parseMeasure(String type, NodeList itemList) {
         for (int i = 0; i < itemList.getLength(); i++) {
             Node item = itemList.item(i);
             if (item.getNodeType() == Node.ELEMENT_NODE) {
                 Element itemElement = (Element) item;
                 String name = itemElement.getAttribute(NAME);
-
                 NodeList values = itemElement.getElementsByTagName(VALUE);
                 if (FILE_MEASURE.equalsIgnoreCase(type)) {
                     InputFile inputFile = getFile(name);
                     if (inputFile != null) {
                         addComplexityFileMeasures(inputFile, values);
                     }
-                } else if (FUNCTION_MEASURE.equalsIgnoreCase(type)) {
-                    InputFile inputFile = getFile(name.split(" at ")[0]);
-                    if (inputFile != null) {
-                        addComplexityFunctionMeasures(inputFile, values);
-                    }
                 }
+                // Si la API lo permite, aquí se podría crear issues por función compleja
+                // else if (FUNCTION_MEASURE.equalsIgnoreCase(type)) {
+                //     // Lógica de issues por función, solo si la API lo permite
+                // }
             }
         }
     }
@@ -139,47 +183,5 @@ public class LizardReportParser {
             return null;
         }
         return context.fileSystem().inputFile(fp);
-    }
-
-    private void addComplexityFileMeasures(InputFile component, NodeList values) {
-        LOGGER.debug("File measures for {}",component.toString());
-        int complexity = Integer.parseInt(values.item(cyclomaticComplexityIndex).getTextContent());
-
-        context.<Integer>newMeasure()
-            .on(component)
-            .forMetric(CoreMetrics.COMPLEXITY)
-            .withValue(complexity)
-            .save();
-
-        int numberOfFunctions = Integer.parseInt(values.item(functionCountIndex).getTextContent());
-        context.<Integer>newMeasure()
-            .on(component)
-            .forMetric(CoreMetrics.FUNCTIONS)
-            .withValue(numberOfFunctions)
-            .save();
-
-        int numberOfLines = Integer.parseInt(values.item(lineCountIndex).getTextContent());
-        context.<Integer>newMeasure()
-            .on(component)
-            .forMetric(CoreMetrics.LINES)
-            .withValue(numberOfLines)
-            .save();
-    }
-
-    private void addComplexityFunctionMeasures(InputFile component, NodeList values) {
-        LOGGER.debug("Function measures for {}",component.key());
-        int complexity = Integer.parseInt(values.item(cyclomaticComplexityIndex).getTextContent());
-        context.<Integer>newMeasure()
-            .on(component)
-            .forMetric(CoreMetrics.COMPLEXITY)
-            .withValue(complexity)
-            .save();
-
-        int numberOfLines = Integer.parseInt(values.item(lineCountIndex).getTextContent());
-        context.<Integer>newMeasure()
-            .on(component)
-            .forMetric(CoreMetrics.LINES)
-            .withValue(numberOfLines)
-            .save();
     }
 }

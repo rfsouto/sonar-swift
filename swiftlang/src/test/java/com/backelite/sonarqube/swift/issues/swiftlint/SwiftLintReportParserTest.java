@@ -55,19 +55,9 @@ public class SwiftLintReportParserTest {
 
     @Test
     public void testParseReport() throws Exception {
-        // Crear un informe SwiftLint simulado en formato JSON
-        String report = "[\n" +
-                "  {\n" +
-                "    \"character\" : 5,\n" +
-                "    \"file\" : \"TestFile.swift\",\n" +
-                "    \"line\" : 12,\n" +
-                "    \"reason\" : \"Prefer `static` over `class` in a final class\",\n" +
-                "    \"rule_id\" : \"static_over_final_class\",\n" +
-                "    \"severity\" : \"Warning\",\n" +
-                "    \"type\" : \"Static Over Final Class\"\n" +
-                "  }\n" +
-                "]";
-        Path tempFile = Files.createTempFile("swiftlint-report", ".json");
+        // Crear un informe SwiftLint simulado en formato TXT
+        String report = "TestFile.swift:12:5: warning: Prefer `static` over `class` in a final class (static_over_final_class)";
+        Path tempFile = Files.createTempFile("swiftlint-report", ".txt");
         try (PrintWriter out = new PrintWriter(tempFile.toFile())) {
             out.print(report);
         }
