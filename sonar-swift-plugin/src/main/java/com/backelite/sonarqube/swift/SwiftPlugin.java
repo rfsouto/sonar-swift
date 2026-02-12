@@ -136,12 +136,12 @@ public class SwiftPlugin implements Plugin {
                         ObjectiveCProfile.class,
 
                         // Tailor rules
-                        TailorSensor.class,
-                        TailorRulesDefinition.class,
+                        //TailorSensor.class,
+                        //TailorRulesDefinition.class,
 
                         // Tailor quality profile
-                        TailorProfile.class,
-                        TailorProfileImporter.class,
+                        //TailorProfile.class,
+                        //TailorProfileImporter.class,
 
                         // SwiftLint rules
                         SwiftLintSensor.class,

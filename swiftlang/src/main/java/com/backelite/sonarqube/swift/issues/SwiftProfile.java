@@ -37,11 +37,9 @@ public class SwiftProfile implements BuiltInQualityProfilesDefinition {
     private static final Logger LOGGER = LoggerFactory.getLogger(SwiftProfile.class);
 
     private final SwiftLintProfileImporter swiftLintProfileImporter;
-    private final TailorProfileImporter tailorProfileImporter;
 
-    public SwiftProfile(final SwiftLintProfileImporter swiftLintProfileImporter, final TailorProfileImporter tailorProfileImporter) {
+    public SwiftProfile(final SwiftLintProfileImporter swiftLintProfileImporter) {
         this.swiftLintProfileImporter = swiftLintProfileImporter;
-        this.tailorProfileImporter = tailorProfileImporter;
     }
 
     @Override
