@@ -42,8 +42,13 @@ import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfile;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfileImporter;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintRulesDefinition;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintSensor;
+import com.backelite.sonarqube.swift.issues.tailor.TailorProfile;
+import com.backelite.sonarqube.swift.issues.tailor.TailorProfileImporter;
+import com.backelite.sonarqube.swift.issues.tailor.TailorRulesDefinition;
+import com.backelite.sonarqube.swift.issues.tailor.TailorSensor;
 import com.backelite.sonarqube.swift.lang.core.Swift;
 import com.backelite.sonarqube.swift.surefire.SwiftTestFileFinder;
+import com.github.sonar.next.sonarqube.java.issues.infer.JavaInferSensor;
 import org.sonar.api.Plugin;
 import org.sonar.api.config.PropertyDefinition;
 
@@ -56,121 +61,149 @@ public class SwiftPlugin implements Plugin {
         TestFileFinders.getInstance().addFinder(new SwiftTestFileFinder());
         TestFileFinders.getInstance().addFinder(new ObjectiveCTestFileFinder());
         context.addExtensions(
-            Arrays.asList(
-                // Property definitions
-                PropertyDefinition.builder(CoberturaSensor.REPORT_PATTERN_KEY)
-                    .defaultValue(CoberturaSensor.DEFAULT_REPORT_PATTERN)
-                    .name("Path to Cobertura reports (coverage)")
-                    .description("Relative to projects' root. Ant patterns are accepted")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder(SwiftLintSensor.REPORT_PATH_KEY)
-                    .defaultValue(SwiftLintSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to SwiftLint report")
-                    .description("Relative to projects' root.")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder(LizardSensor.REPORT_PATH_KEY)
-                    .defaultValue(LizardSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to Lizard report (complexity)")
-                    .description("Relative to projects' root.")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder(OCLintSensor.REPORT_PATH_KEY)
-                    .defaultValue(OCLintSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to OCLint pmd formatted report")
-                    .description("Relative to projects' root.")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder(FauxPasSensor.REPORT_PATH_KEY)
-                    .defaultValue(FauxPasSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to FauxPas json formatted report")
-                    .description("Relative to projects' root.")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder(InferSensor.REPORT_PATH_KEY)
-                    .defaultValue(InferSensor.DEFAULT_REPORT_PATH)
-                    .name("Path to Infer json formatted report (Objective-C)")
-                    .description("Relative to projects' root.")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
+                Arrays.asList(
+                        // Property definitions
+                        PropertyDefinition.builder(CoberturaSensor.REPORT_PATTERN_KEY)
+                                .defaultValue(CoberturaSensor.DEFAULT_REPORT_PATTERN)
+                                .name("Path to Cobertura reports (coverage)")
+                                .description("Relative to projects' root. Ant patterns are accepted")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(SwiftLintSensor.REPORT_PATH_KEY)
+                                .defaultValue(SwiftLintSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to SwiftLint report")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(TailorSensor.REPORT_PATH_KEY)
+                                .defaultValue(TailorSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to Tailor report")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(LizardSensor.REPORT_PATH_KEY)
+                                .defaultValue(LizardSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to Lizard report (complexity)")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(OCLintSensor.REPORT_PATH_KEY)
+                                .defaultValue(OCLintSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to OCLint pmd formatted report")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(FauxPasSensor.REPORT_PATH_KEY)
+                                .defaultValue(FauxPasSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to FauxPas json formatted report")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(InferSensor.REPORT_PATH_KEY)
+                                .defaultValue(InferSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to Infer json formatted report (Objective-C)")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder(JavaInferSensor.REPORT_PATH_KEY)
+                                .defaultValue(JavaInferSensor.DEFAULT_REPORT_PATH)
+                                .name("Path to Infer json formatted report (Java)")
+                                .description("Relative to projects' root.")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
 
-                PropertyDefinition.builder("sonar.swift.complexityThreshold")
-                    .defaultValue("10")
-                    .name("Cyclomatic Complexity Threshold")
-                    .description("Maximum allowed cyclomatic complexity for Swift functions.")
-                    .category("Swift")
-                    .subCategory("Complexity")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
-                PropertyDefinition.builder("sonar.swift.cognitiveComplexityThreshold")
-                    .defaultValue("15")
-                    .name("Cognitive Complexity Threshold")
-                    .description("Maximum allowed cognitive complexity for Swift functions.")
-                    .category("Swift")
-                    .subCategory("Complexity")
-                    .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                    .build(),
+                        PropertyDefinition.builder("sonar.swift.complexityThreshold")
+                                .defaultValue("10")
+                                .name("Cyclomatic Complexity Threshold")
+                                .description("Maximum allowed cyclomatic complexity for Swift functions.")
+                                .category("Swift")
+                                .subCategory("Complexity")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
+                        PropertyDefinition.builder("sonar.swift.cognitiveComplexityThreshold")
+                                .defaultValue("15")
+                                .name("Cognitive Complexity Threshold")
+                                .description("Maximum allowed cognitive complexity for Swift functions.")
+                                .category("Swift")
+                                .subCategory("Complexity")
+                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
+                                .build(),
 
-                // Language support
-                Swift.class,
-                SwiftProfile.class,
-                ObjectiveC.class,
-                ObjectiveCProfile.class,
+                        // Language support
+                        Swift.class,
+                        SwiftProfile.class,
+                        ObjectiveC.class,
+                        ObjectiveCProfile.class,
 
-                // SwiftLint rules
-                SwiftLintSensor.class,
-                SwiftLintRulesDefinition.class,
+                        // Tailor rules
+                        TailorSensor.class,
+                        TailorRulesDefinition.class,
 
-                // SwiftLint guality profile
-                SwiftLintProfile.class,
-                SwiftLintProfileImporter.class,
+                        // Tailor quality profile
+                        TailorProfile.class,
+                        TailorProfileImporter.class,
 
-                // OCLint rules
-                OCLintSensor.class,
-                OCLintRulesDefinition.class,
+                        // SwiftLint rules
+                        SwiftLintSensor.class,
+                        SwiftLintRulesDefinition.class,
 
-                // OCLint quality profile
-                OCLintProfile.class,
-                OCLintProfileImporter.class,
+                        // SwiftLint guality profile
+                        SwiftLintProfile.class,
+                        SwiftLintProfileImporter.class,
 
-                // Infer OC rules
-                InferSensor.class,
-                InferRulesDefinition.class,
+                        // OCLint rules
+                        OCLintSensor.class,
+                        OCLintRulesDefinition.class,
 
-                // Infer OC quality profile
-                InferProfile.class,
-                InferProfileImporter.class,
+                        // OCLint quality profile
+                        OCLintProfile.class,
+                        OCLintProfileImporter.class,
 
-                // antlr
+                        // Infer OC rules
+                        InferSensor.class,
+                        InferRulesDefinition.class,
+
+                        // Infer OC quality profile
+                        InferProfile.class,
+                        InferProfileImporter.class,
+
+                        // Infer Java rules
+                        //JavaInferSensor.class,
+                        //com.github.sonar.next.sonarqube.java.issues.infer.InferRulesDefinition.class,
+
+                        // Infer Java quality profile
+                        //com.github.sonar.next.sonarqube.java.issues.infer.InferProfile.class,
+                        //com.github.sonar.next.sonarqube.java.issues.infer.InferProfileImporter.class,
+
+                        // antlr
 //                AntlrSensor.class,
 //                    NextProfile.class,
 //                    NextRulesDefinition.class,
 //                    NextProfileImporter.class,
 
 
-                // FauxPas rules
-                FauxPasSensor.class,
-                FauxPasRulesDefinition.class,
+                        // FauxPas rules
+                        FauxPasSensor.class,
+                        FauxPasRulesDefinition.class,
 
-                // FauxPas quality profile
-                FauxPasProfile.class,
-                FauxPasProfileImporter.class,
+                        // FauxPas quality profile
+                        FauxPasProfile.class,
+                        FauxPasProfileImporter.class,
 
-                // Duplications search
+                        // Duplications search
 //                SwiftCpdMapping.class,
-                ObjectiveCCpdAnalyzer.class,
+                        ObjectiveCCpdAnalyzer.class,
 
-                // Code
-                SwiftSquidSensor.class,
-                ObjectiveCSquidSensor.class,
+                        // Code
+                        SwiftSquidSensor.class,
+                        ObjectiveCSquidSensor.class,
 
-                // Coverage
-                CoberturaSensor.class,
+                        // Coverage
+                        CoberturaSensor.class,
 
-                // Complexity
-                LizardSensor.class
-            )
+                        // Complexity
+                        LizardSensor.class
+                )
         );
     }
 }
