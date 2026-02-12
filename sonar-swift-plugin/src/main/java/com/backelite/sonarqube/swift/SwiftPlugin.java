@@ -42,10 +42,6 @@ import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfile;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfileImporter;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintRulesDefinition;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintSensor;
-import com.backelite.sonarqube.swift.issues.tailor.TailorProfile;
-import com.backelite.sonarqube.swift.issues.tailor.TailorProfileImporter;
-import com.backelite.sonarqube.swift.issues.tailor.TailorRulesDefinition;
-import com.backelite.sonarqube.swift.issues.tailor.TailorSensor;
 import com.backelite.sonarqube.swift.lang.core.Swift;
 import com.backelite.sonarqube.swift.surefire.SwiftTestFileFinder;
 import com.github.sonar.next.sonarqube.java.issues.infer.JavaInferSensor;
@@ -72,12 +68,6 @@ public class SwiftPlugin implements Plugin {
                         PropertyDefinition.builder(SwiftLintSensor.REPORT_PATH_KEY)
                                 .defaultValue(SwiftLintSensor.DEFAULT_REPORT_PATH)
                                 .name("Path to SwiftLint report")
-                                .description("Relative to projects' root.")
-                                .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
-                                .build(),
-                        PropertyDefinition.builder(TailorSensor.REPORT_PATH_KEY)
-                                .defaultValue(TailorSensor.DEFAULT_REPORT_PATH)
-                                .name("Path to Tailor report")
                                 .description("Relative to projects' root.")
                                 .onQualifiers(org.sonar.api.resources.Qualifiers.PROJECT)
                                 .build(),
@@ -134,14 +124,6 @@ public class SwiftPlugin implements Plugin {
                         SwiftProfile.class,
                         ObjectiveC.class,
                         ObjectiveCProfile.class,
-
-                        // Tailor rules
-                        //TailorSensor.class,
-                        //TailorRulesDefinition.class,
-
-                        // Tailor quality profile
-                        //TailorProfile.class,
-                        //TailorProfileImporter.class,
 
                         // SwiftLint rules
                         SwiftLintSensor.class,

@@ -19,7 +19,6 @@ package com.backelite.sonarqube.swift.issues;
 
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfile;
 import com.backelite.sonarqube.swift.issues.swiftlint.SwiftLintProfileImporter;
-import com.backelite.sonarqube.swift.issues.tailor.TailorProfileImporter;
 import com.backelite.sonarqube.swift.lang.core.Swift;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,12 @@ public class SwiftProfile implements BuiltInQualityProfilesDefinition {
         BuiltInQualityProfilesDefinition.NewBuiltInQualityProfile nbiqp = context.createBuiltInQualityProfile("Swift", Swift.KEY);
         nbiqp.setDefault(true);
 
+        // Añadir comprobación de null para getResourceAsStream
         try (Reader config = new InputStreamReader(getClass().getResourceAsStream(SwiftLintProfile.PROFILE_PATH))) {
+            if (config == null) {
+                LOGGER.error("No se encontró el archivo de perfil SwiftLint: " + SwiftLintProfile.PROFILE_PATH);
+                return;
+            }
             RulesProfile ocLintRulesProfile = swiftLintProfileImporter.importProfile(config, ValidationMessages.create());
             for (ActiveRule rule : ocLintRulesProfile.getActiveRules()) {
                 nbiqp.activateRule(rule.getRepositoryKey(), rule.getRuleKey());
